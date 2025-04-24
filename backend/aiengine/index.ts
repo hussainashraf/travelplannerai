@@ -3,6 +3,17 @@ import dotenv from 'dotenv';
 import axios from 'axios';
 import { indianAirports } from './airports';
 import { hotelData } from './hotel-data';
+import {
+    HotelResponse,
+    Hotel,
+    HotelDataType,
+    FlightParams,
+    HotelParams,
+    TripData,
+    FlightInfo,
+    HotelInfo,
+    TripPlanResponse
+} from './types';
     
 dotenv.config();
 
@@ -12,49 +23,6 @@ const openai = new OpenAI({
 
 const FLIGHT_API_KEY = '68092ec2bbaf5dda8cbde0b2';
 const MAKCORPS_API_KEY = '68091ec2e40ecf4738ae291c';
-
-// Add this interface near the top of the file with other interfaces
-interface HotelResponse {
-    name?: string;
-    price?: number;
-    rating?: number;
-    address?: string;
-    location?: string;
-    amenities?: string[];
-    image_url?: string;
-    photo?: string;
-    description?: string;
-    latitude?: number;
-    lat?: number;
-    longitude?: number;
-    lng?: number;
-    id?: string;
-    room_types?: any[];
-}
-
-// Add this interface near the top with other interfaces
-interface Hotel {
-    name: string;
-    price: string;
-    rating: number;
-    location: string;
-    amenities: string[];
-    image: string;
-    description: string;
-    coordinates: {
-        lat: number;
-        lon: number;
-    };
-}
-
-interface CityData {
-    cityId: string;
-    hotels: Hotel[];
-}
-
-interface HotelDataType {
-    [key: string]: CityData;
-}
 
 // Function definitions for OpenAI
 const functions = [
@@ -160,7 +128,7 @@ function formatDate(date: string | Date): string {
     return d.toISOString().split('T')[0];
 }
 
-async function fetchFlights(params: any) {
+async function fetchFlights(params: FlightParams): Promise<FlightInfo> {
     try {
         console.log('Fetching flights with params:', params);
 
@@ -293,7 +261,7 @@ async function getCityId(cityName: string): Promise<string | null> {
     }
 }
 
-async function fetchHotels(params: any) {
+async function fetchHotels(params: HotelParams): Promise<HotelInfo> {
     try {
         console.log('Fetching hotels with params:', params);
 
@@ -339,6 +307,7 @@ async function fetchHotels(params: any) {
         return {
             hotels: [],
             total: 0,
+            cityId: '',
             message: error.message || "Error fetching hotel data",
             error: error.message
         };
@@ -367,7 +336,7 @@ Format the final itinerary using markdown with clear sections:
 
 Use emojis and markdown formatting to make the plan engaging and easy to read.`;
 
-export async function generateTripPlan(tripData: any) {
+export async function generateTripPlan(tripData: TripData): Promise<TripPlanResponse> {
     try {
         const messages: Array<OpenAI.Chat.ChatCompletionMessageParam> = [
             { role: "system", content: systemPrompt },
@@ -389,8 +358,8 @@ export async function generateTripPlan(tripData: any) {
         ];
 
         let finalPlan = '';
-        let flightData = null;
-        let hotelData = null;
+        let flightData: FlightInfo | null = null;
+        let hotelData: HotelInfo | null = null;
 
         // Initial API call with function calling enabled
         while (true) {
@@ -417,8 +386,8 @@ export async function generateTripPlan(tripData: any) {
             let functionResult;
             if (functionName === 'fetch_flights') {
                 // Prepare flight parameters
-                const flightParams = {
-                    origin: tripData.origin?.name || tripData.source,
+                const flightParams: FlightParams = {
+                    origin: tripData.origin?.name || tripData.source || '',
                     destination: tripData.destination,
                     departureDate: tripData.startDate,
                     ...functionArgs
@@ -427,7 +396,7 @@ export async function generateTripPlan(tripData: any) {
                 flightData = functionResult;
             } else if (functionName === 'fetch_hotels') {
                 // Prepare hotel parameters
-                const hotelParams = {
+                const hotelParams: HotelParams = {
                     location: tripData.destination,
                     checkIn: tripData.startDate,
                     checkOut: tripData.endDate,
