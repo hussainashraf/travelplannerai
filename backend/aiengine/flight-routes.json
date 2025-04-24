@@ -1,0 +1,244 @@
+{
+  "routes": [
+    {
+      "origin": "Delhi",
+      "originCode": "DEL",
+      "destination": "Mumbai",
+      "destinationCode": "BOM",
+      "airlines": [
+        {
+          "name": "IndiGo",
+          "flightNumber": "6E-123",
+          "price": 4500,
+          "duration": "2h 10m",
+          "stops": 0
+        },
+        {
+          "name": "Air India",
+          "flightNumber": "AI-456",
+          "price": 5200,
+          "duration": "2h 15m",
+          "stops": 0
+        }
+      ]
+    },
+    {
+      "origin": "Mumbai",
+      "originCode": "BOM",
+      "destination": "Bangalore",
+      "destinationCode": "BLR",
+      "airlines": [
+        {
+          "name": "IndiGo",
+          "flightNumber": "6E-234",
+          "price": 3800,
+          "duration": "1h 45m",
+          "stops": 0
+        },
+        {
+          "name": "Vistara",
+          "flightNumber": "UK-789",
+          "price": 4500,
+          "duration": "1h 50m",
+          "stops": 0
+        }
+      ]
+    },
+    {
+      "origin": "Delhi",
+      "originCode": "DEL",
+      "destination": "Goa",
+      "destinationCode": "GOI",
+      "airlines": [
+        {
+          "name": "IndiGo",
+          "flightNumber": "6E-345",
+          "price": 6200,
+          "duration": "2h 45m",
+          "stops": 0
+        },
+        {
+          "name": "SpiceJet",
+          "flightNumber": "SG-123",
+          "price": 5800,
+          "duration": "2h 50m",
+          "stops": 0
+        }
+      ]
+    },
+    {
+      "origin": "Bangalore",
+      "originCode": "BLR",
+      "destination": "Kolkata",
+      "destinationCode": "CCU",
+      "airlines": [
+        {
+          "name": "AirAsia India",
+          "flightNumber": "I5-789",
+          "price": 5500,
+          "duration": "2h 30m",
+          "stops": 0
+        },
+        {
+          "name": "IndiGo",
+          "flightNumber": "6E-456",
+          "price": 5200,
+          "duration": "2h 35m",
+          "stops": 0
+        }
+      ]
+    },
+    {
+      "origin": "Mumbai",
+      "originCode": "BOM",
+      "destination": "Chennai",
+      "destinationCode": "MAA",
+      "airlines": [
+        {
+          "name": "Vistara",
+          "flightNumber": "UK-234",
+          "price": 4800,
+          "duration": "2h 5m",
+          "stops": 0
+        },
+        {
+          "name": "Air India",
+          "flightNumber": "AI-789",
+          "price": 5100,
+          "duration": "2h 10m",
+          "stops": 0
+        }
+      ]
+    },
+    {
+      "origin": "Delhi",
+      "originCode": "DEL",
+      "destination": "Hyderabad",
+      "destinationCode": "HYD",
+      "airlines": [
+        {
+          "name": "IndiGo",
+          "flightNumber": "6E-567",
+          "price": 4900,
+          "duration": "2h 15m",
+          "stops": 0
+        },
+        {
+          "name": "SpiceJet",
+          "flightNumber": "SG-456",
+          "price": 4600,
+          "duration": "2h 20m",
+          "stops": 0
+        }
+      ]
+    },
+    {
+      "origin": "Kolkata",
+      "originCode": "CCU",
+      "destination": "Chennai",
+      "destinationCode": "MAA",
+      "airlines": [
+        {
+          "name": "IndiGo",
+          "flightNumber": "6E-678",
+          "price": 5300,
+          "duration": "2h 25m",
+          "stops": 0
+        },
+        {
+          "name": "AirAsia India",
+          "flightNumber": "I5-234",
+          "price": 5000,
+          "duration": "2h 30m",
+          "stops": 0
+        }
+      ]
+    },
+    {
+      "origin": "Bangalore",
+      "originCode": "BLR",
+      "destination": "Goa",
+      "destinationCode": "GOI",
+      "airlines": [
+        {
+          "name": "IndiGo",
+          "flightNumber": "6E-789",
+          "price": 3500,
+          "duration": "1h 15m",
+          "stops": 0
+        },
+        {
+          "name": "Vistara",
+          "flightNumber": "UK-567",
+          "price": 4200,
+          "duration": "1h 20m",
+          "stops": 0
+        }
+      ]
+    }
+  ],
+  "airports": {
+    "DEL": {
+      "name": "Indira Gandhi International Airport",
+      "city": "Delhi",
+      "code": "DEL"
+    },
+    "BOM": {
+      "name": "Chhatrapati Shivaji Maharaj International Airport",
+      "city": "Mumbai",
+      "code": "BOM"
+    },
+    "BLR": {
+      "name": "Kempegowda International Airport",
+      "city": "Bangalore",
+      "code": "BLR"
+    },
+    "MAA": {
+      "name": "Chennai International Airport",
+      "city": "Chennai",
+      "code": "MAA"
+    },
+    "CCU": {
+      "name": "Netaji Subhas Chandra Bose International Airport",
+      "city": "Kolkata",
+      "code": "CCU"
+    },
+    "HYD": {
+      "name": "Rajiv Gandhi International Airport",
+      "city": "Hyderabad",
+      "code": "HYD"
+    },
+    "GOI": {
+      "name": "Dabolim Airport",
+      "city": "Goa",
+      "code": "GOI"
+    }
+  },
+  "airlines": {
+    "IndiGo": {
+      "code": "6E",
+      "name": "IndiGo",
+      "logo": "indigo.png"
+    },
+    "Air India": {
+      "code": "AI",
+      "name": "Air India",
+      "logo": "airindia.png"
+    },
+    "Vistara": {
+      "code": "UK",
+      "name": "Vistara",
+      "logo": "vistara.png"
+    },
+    "SpiceJet": {
+      "code": "SG",
+      "name": "SpiceJet",
+      "logo": "spicejet.png"
+    },
+    "AirAsia India": {
+      "code": "I5",
+      "name": "AirAsia India",
+      "logo": "airasia.png"
+    }
+  }
+} 
