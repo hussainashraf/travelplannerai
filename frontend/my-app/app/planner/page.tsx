@@ -166,7 +166,7 @@ export default function PlannerPage() {
     setIsSubmitting(true);
     setShowPlan(false);
     try {
-      const response = await fetch('http://localhost:3001/api/planner/generate-plan', {
+      const response = await fetch('http://54.90.71.92:3001//api/planner/generate-plan', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -346,9 +346,6 @@ export default function PlannerPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="flight">Flight</SelectItem>
-                    <SelectItem value="train">Train</SelectItem>
-                    <SelectItem value="bus">Bus</SelectItem>
-                    <SelectItem value="car">Car</SelectItem>
                     <SelectItem value="mixed">Mixed (Multiple modes)</SelectItem>
                   </SelectContent>
                 </Select>
