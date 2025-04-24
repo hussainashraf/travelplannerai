@@ -166,7 +166,7 @@ export default function PlannerPage() {
     setIsSubmitting(true);
     setShowPlan(false);
     try {
-      const response = await fetch('http://54.90.71.92:3001//api/planner/generate-plan', {
+      const response = await fetch('http://54.90.71.92:3001/api/planner/generate-plan', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
