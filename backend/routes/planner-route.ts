@@ -1,14 +1,22 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { generateTripPlan } from '../aiengine';
 
 const router = express.Router();
 
 interface TripPlanRequest {
+    origin?: {
+        name: string;
+        coordinates: {
+            lat: string;
+            lon: string;
+        }
+    };
     destination: string;
     startDate: string;
     endDate: string;
     budget: string;
     vacationType: string;
+    transportMode: string;
     numberOfDays: number;
     coordinates: {
         lat: string;
@@ -17,28 +25,37 @@ interface TripPlanRequest {
 }
 
 // Generate trip plan
-router.post('/generate-plan', async (req: Request<{}, {}, TripPlanRequest>, res: Response) => {
+router.post('/generate-plan', async (req: Request<{}, {}, TripPlanRequest>, res: Response, next: NextFunction) => {
     try {
         const tripData = req.body;
 
+        // Validate required fields
+        if (!tripData.destination || !tripData.startDate || !tripData.endDate || !tripData.budget || 
+            !tripData.vacationType || !tripData.numberOfDays || !tripData.coordinates) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required fields'
+            });
+        }
+
         // Generate AI trip plan
         const aiResponse = await generateTripPlan(tripData);
+
+        if (!aiResponse) {
+            throw new Error('Failed to generate trip plan');
+        }
 
         res.json({
             success: true,
             plan: aiResponse.plan
         });
     } catch (error) {
-        console.error('Error generating trip plan:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to generate trip plan'
-        });
+        next(error); // Forward error to error handling middleware
     }
 });
 
 // Get saved plans
-router.get('/saved-plans', async (req: Request, res: Response) => {
+router.get('/saved-plans', async (req: Request, res: Response, next: NextFunction) => {
     try {
         // TODO: Implement database fetch logic
         res.json({
@@ -46,16 +63,12 @@ router.get('/saved-plans', async (req: Request, res: Response) => {
             plans: []
         });
     } catch (error) {
-        console.error('Error fetching saved plans:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch saved plans'
-        });
+        next(error);
     }
 });
 
 // Save a plan
-router.post('/save-plan', async (req: Request, res: Response) => {
+router.post('/save-plan', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const planData = req.body;
         // TODO: Implement database save logic
@@ -64,11 +77,7 @@ router.post('/save-plan', async (req: Request, res: Response) => {
             message: 'Plan saved successfully'
         });
     } catch (error) {
-        console.error('Error saving plan:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to save plan'
-        });
+        next(error);
     }
 });
 

@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes';
@@ -17,7 +17,7 @@ const corsOptions = {
 };
 
 // Middleware
-app.use(cors());  // Use cors with default config for development
+app.use(cors(corsOptions));  // Use cors with specified config
 app.use(express.json());
 
 // Routes
@@ -28,10 +28,15 @@ app.get('/', (req: Request, res: Response) => {
     res.json({ message: 'Hello from the Travel Planner AI backend!' });
 });
 
-// Error handling
-app.use((err: Error, req: Request, res: Response) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Something went wrong!' });
+// Error handling middleware
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    console.error('Error:', err.message);
+    console.error('Stack:', err.stack);
+    res.status(500).json({ 
+        success: false,
+        error: 'Something went wrong!',
+        message: err.message 
+    });
 });
 
 app.listen(PORT, () => {
