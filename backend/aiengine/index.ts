@@ -348,122 +348,39 @@ async function fetchHotels(params: any) {
 const systemPrompt = `You are an expert travel planner with deep knowledge of destinations worldwide. 
 Your task is to create detailed, personalized travel itineraries based on user preferences.
 
-IMPORTANT INSTRUCTIONS FOR DATA GATHERING:
-1. For Flight Information:
-   - Use the provided flight data from the fetch_flights function
-   - Analyze available flights and recommend the best options based on:
-     * Price
-     * Duration
-     * Departure/Arrival times
-     * Number of stops
-   - Include specific flight numbers and prices in recommendations
+To gather necessary information:
+1. Use the fetch_flights function to find available flights based on the user's requirements
+2. Use the fetch_hotels function to find suitable accommodations within the user's budget
 
-2. For Hotel Information:
-   - Use the fetch_hotels function to get accommodation options
-   - Consider the user's budget and preferences
-   - Recommend specific hotels with their amenities and prices
+When creating the plan:
+- Analyze flight options for the best balance of price, timing, and convenience
+- Select hotels that match the budget and preferences
+- Create a detailed day-by-day itinerary
+- Provide a comprehensive budget breakdown
 
-Consider the following when creating plans:
-1. Budget allocation:
-   - Flight costs (from flight data)
-   - Hotel costs (from hotel data)
-   - Daily activities and meals
-   - Local transportation
-   - Shopping and souvenirs
-
-2. Trip Components:
-   - Transportation details with specific flight recommendations
-   - Accommodation with specific hotel recommendations
-   - Daily activities and attractions
-   - Restaurant recommendations
-   - Local transportation options
-   - Shopping areas
-   - Cultural experiences
-
-3. Practical Considerations:
-   - Weather and seasonal factors
-   - Local customs and etiquette
-   - Safety tips
-   - Emergency information
-   - Visa requirements if applicable
-
-Format the itinerary using markdown with clear sections:
+Format the final itinerary using markdown with clear sections:
 # 🛫 Flight Details
-- Best recommended flights with prices
-- Alternative options
-
 # 🏨 Accommodation
-- Recommended hotels with prices
-- Location benefits
-
 # 📅 Daily Itinerary
-## Day 1
-- Morning activities
-- Afternoon plans
-- Evening suggestions
-[Continue for each day]
-
 # 💰 Budget Breakdown
-- Flight costs
-- Hotel costs
-- Daily expenses
-- Total estimated cost
-
 # 🗺️ Travel Tips
-- Local transportation
-- Cultural notes
-- Safety advice
-- Emergency contacts
 
-Use emojis and markdown formatting to make the plan engaging and easy to read.
-Ensure all recommendations are within the specified budget.`;
+Use emojis and markdown formatting to make the plan engaging and easy to read.`;
 
 export async function generateTripPlan(tripData: any) {
     try {
-        // First, fetch flight information
-        const flightParams = {
-            origin: tripData.origin || tripData.source,
-            destination: tripData.destination,
-            departureDate: tripData.startDate,
-            adults: '1',
-            children: '0',
-            infants: '0',
-            cabinClass: 'Economy'
-        };
-
-        console.log('Fetching flights for trip planning:', flightParams);
-        const flightInfo = await fetchFlights(flightParams);
-
-        // Fetch hotel information
-        const hotelParams = {
-            location: tripData.destination,
-            checkIn: tripData.startDate,
-            checkOut: tripData.endDate,
-            budget: tripData.budget
-        };
-
-        console.log('Fetching hotels for trip planning:', hotelParams);
-        const hotelInfo = await fetchHotels(hotelParams);
-
         const messages: Array<OpenAI.Chat.ChatCompletionMessageParam> = [
             { role: "system", content: systemPrompt },
             {
                 role: "user",
-                content: `Please create a travel plan for a ${tripData.numberOfDays}-day trip from ${tripData.origin || tripData.source} to ${tripData.destination}.
+                content: `Please create a travel plan for a ${tripData.numberOfDays}-day trip from ${tripData.origin?.name || tripData.source} to ${tripData.destination}.
                 
                 Trip Details:
                 - Budget: ${tripData.budget}
                 - Vacation Type: ${tripData.vacationType}
                 - Dates: ${tripData.startDate} to ${tripData.endDate}
                 
-                Available Flights:
-                ${JSON.stringify(flightInfo.flights, null, 2)}
-                
-                Available Hotels:
-                ${JSON.stringify(hotelInfo.hotels, null, 2)}
-                
-                Please create a comprehensive travel plan following the format specified in the system prompt. 
-                Ensure to include specific flight and hotel recommendations from the provided options.
+                Please start by checking available flights and hotels, then create a comprehensive travel plan.
                 
                 Additional Preferences:
                 - Preferred activities: ${tripData.preferences || 'Not specified'}
@@ -471,18 +388,70 @@ export async function generateTripPlan(tripData: any) {
             }
         ];
 
-        // Get AI response
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: messages,
-            temperature: 0.1,
-        });
+        let finalPlan = '';
+        let flightData = null;
+        let hotelData = null;
+
+        // Initial API call with function calling enabled
+        while (true) {
+            const response = await openai.chat.completions.create({
+                model: "gpt-4",
+                messages: messages,
+                functions: functions,
+                function_call: "auto",
+                temperature: 0.1,
+            });
+
+            const responseMessage = response.choices[0].message;
+
+            // If no function call is needed, we have our final response
+            if (!responseMessage.function_call) {
+                finalPlan = responseMessage.content || '';
+                break;
+            }
+
+            // Handle function calls
+            const functionName = responseMessage.function_call.name;
+            const functionArgs = JSON.parse(responseMessage.function_call.arguments);
+            
+            let functionResult;
+            if (functionName === 'fetch_flights') {
+                // Prepare flight parameters
+                const flightParams = {
+                    origin: tripData.origin?.name || tripData.source,
+                    destination: tripData.destination,
+                    departureDate: tripData.startDate,
+                    ...functionArgs
+                };
+                functionResult = await fetchFlights(flightParams);
+                flightData = functionResult;
+            } else if (functionName === 'fetch_hotels') {
+                // Prepare hotel parameters
+                const hotelParams = {
+                    location: tripData.destination,
+                    checkIn: tripData.startDate,
+                    checkOut: tripData.endDate,
+                    budget: tripData.budget,
+                    ...functionArgs
+                };
+                functionResult = await fetchHotels(hotelParams);
+                hotelData = functionResult;
+            }
+
+            // Add the assistant's message and function result to the conversation
+            messages.push(responseMessage);
+            messages.push({
+                role: "function",
+                name: functionName,
+                content: JSON.stringify(functionResult)
+            });
+        }
 
         return {
             success: true,
-            plan: response.choices[0].message.content,
-            flights: flightInfo.flights,
-            hotels: hotelInfo.hotels
+            plan: finalPlan,
+            flights: flightData?.flights || [],
+            hotels: hotelData?.hotels || []
         };
 
     } catch (error) {
