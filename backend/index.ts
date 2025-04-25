@@ -10,15 +10,19 @@ const PORT = process.env.PORT || 5000;
 
 // CORS configuration
 const corsOptions = {
-    origin: '*', // Allow all origins
+    origin: ['http://localhost:3000', 'http://localhost:3001'], // Allow frontend origins
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    credentials: true,
+    optionsSuccessStatus: 200
 };
 
 // Middleware
 app.use(cors(corsOptions));  // Use cors with specified config
 app.use(express.json());
+
+// Enable pre-flight requests for all routes
+app.options('*', cors(corsOptions));
 
 // Routes
 app.use('/api', routes);

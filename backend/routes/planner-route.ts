@@ -1,7 +1,12 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { generateTripPlan } from '../aiengine';
+import { generateTripPlan, fetchFlights, fetchHotels, systemPrompt } from '../aiengine';
+import cors from 'cors';
+import { OpenAI } from 'openai';
 
 const router = express.Router();
+
+// Enable CORS for all routes
+
 
 interface TripPlanRequest {
     origin?: {
@@ -23,6 +28,89 @@ interface TripPlanRequest {
         lon: string;
     };
 }
+
+interface ChatMessage {
+    role: 'user' | 'assistant' | 'system' | 'function';
+    content: string;
+    name?: string;
+}
+
+interface ChatRequest {
+    message: string;
+    chatHistory: ChatMessage[];
+}
+
+// Function definitions for OpenAI
+const functions = [
+    {
+        name: 'fetch_flights',
+        description: 'Fetch flight information between locations for given dates',
+        parameters: {
+            type: 'object',
+            properties: {
+                origin: {
+                    type: 'string',
+                    description: 'Origin city/location'
+                },
+                destination: {
+                    type: 'string',
+                    description: 'Destination city/location'
+                },
+                departureDate: {
+                    type: 'string',
+                    description: 'Departure date in YYYY-MM-DD format'
+                },
+                adults: {
+                    type: 'string',
+                    description: 'Number of adult passengers'
+                },
+                children: {
+                    type: 'string',
+                    description: 'Number of child passengers'
+                },
+                infants: {
+                    type: 'string',
+                    description: 'Number of infant passengers'
+                },
+                cabinClass: {
+                    type: 'string',
+                    description: 'Cabin class (Economy, Business, First, Premium_Economy)'
+                }
+            },
+            required: ['origin', 'destination', 'departureDate']
+        }
+    },
+    {
+        name: 'fetch_hotels',
+        description: 'Fetch hotel recommendations for the destination',
+        parameters: {
+            type: 'object',
+            properties: {
+                location: {
+                    type: 'string',
+                    description: 'Destination city/location'
+                },
+                checkIn: {
+                    type: 'string',
+                    description: 'Check-in date in YYYY-MM-DD format'
+                },
+                checkOut: {
+                    type: 'string',
+                    description: 'Check-out date in YYYY-MM-DD format'
+                },
+                budget: {
+                    type: 'string',
+                    description: 'Budget range for hotels'
+                },
+                preferences: {
+                    type: 'string',
+                    description: 'Additional preferences like "beachfront", "city center", etc.'
+                }
+            },
+            required: ['location', 'checkIn', 'checkOut']
+        }
+    }
+];
 
 // Generate trip plan
 router.post('/generate-plan', async (req: Request<{}, {}, TripPlanRequest>, res: Response, next: NextFunction) => {
@@ -51,6 +139,87 @@ router.post('/generate-plan', async (req: Request<{}, {}, TripPlanRequest>, res:
         });
     } catch (error) {
         next(error); // Forward error to error handling middleware
+    }
+});
+
+// Chat endpoint
+router.post('/chat', async (req: Request<{}, {}, ChatRequest>, res: Response, next: NextFunction) => {
+    try {
+        const { message, chatHistory } = req.body;
+
+        // Validate required fields
+        if (!message) {
+            return res.status(400).json({
+                success: false,
+                error: 'Message is required'
+            });
+        }
+
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            ...chatHistory,
+            { role: 'user', content: message }
+        ];
+
+        // Initialize OpenAI
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY
+        });
+
+        let finalResponse = '';
+        let flightData = null;
+        let hotelData = null;
+
+        // Initial API call with function calling enabled
+        while (true) {
+            const response = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: messages as any,
+                functions: functions,
+                function_call: "auto",
+                temperature: 0.7,
+            });
+
+            const responseMessage = response.choices[0].message;
+
+            // If no function call is needed, we have our final response
+            if (!responseMessage.function_call) {
+                finalResponse = responseMessage.content || '';
+                break;
+            }
+
+            // Handle function calls
+            const functionName = responseMessage.function_call.name;
+            const functionArgs = JSON.parse(responseMessage.function_call.arguments);
+            
+            let functionResult;
+            if (functionName === 'fetch_flights') {
+                functionResult = await fetchFlights(functionArgs);
+                flightData = functionResult;
+            } else if (functionName === 'fetch_hotels') {
+                functionResult = await fetchHotels(functionArgs);
+                hotelData = functionResult;
+            }
+
+            // Add the assistant's message and function result to the conversation
+            messages.push(responseMessage as any);
+            messages.push({
+                role: 'function',
+                name: functionName,
+                content: JSON.stringify(functionResult)
+            });
+        }
+
+        res.json({
+            success: true,
+            response: finalResponse,
+            flights: flightData?.flights || [],
+            hotels: hotelData?.hotels || []
+        });
+
+    } catch (error) {
+        console.error('Error in chat endpoint:', error);
+        next(error);
     }
 });
 
